@@ -1,2 +1,5 @@
 # Index-Fund-Report-Skimmer
 A program that skims two (quarter after quarter) index fund reports to look for an increase in an allocation. An increase in an allocation indicates that the analysts believe the stock price will go up.
+
+**#How the algorithm works:**
+The algorithm scans the table of the holdings of the index fund (quarter n report), parses the data and stores the stock symbol of the company and the percent of the portfolio value that it makes up. Then the algorithm scans the second table of the holdings of the index fund (quarter n + 1 report) for the same data. After that, the algorithm compares the data from quarter n + 1 to the previous quarter to look for either an increase in allocation or a new investment indicating that the stock analysts believe it is a good stock to invest in at the moment. The algorithm reports increases of allocation of 10% change as significant allocation increases and increases of allocation of 5% to less than 10% as moderate allocation increases.
