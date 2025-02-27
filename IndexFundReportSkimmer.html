@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stock Allocation Change Analyzer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    textarea { width: 100%; height: 150px; }
+    .container { max-width: 800px; margin: auto; }
+    .section { margin-bottom: 30px; }
+    .results { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
+    h1, h2 { color: #333; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Stock Allocation Change Analyzer</h1>
+    
+    <div class="section">
+      <h2>Quarter N Report</h2>
+      <textarea id="q1_data" placeholder="Enter Quarter N data..."></textarea>
+    </div>
+    
+    <div class="section">
+      <h2>Quarter N+1 Report</h2>
+      <textarea id="q2_data" placeholder="Enter Quarter N+1 data..."></textarea>
+    </div>
+    
+    <button onclick="analyze()">Analyze</button>
+    
+    <div class="section">
+      <h2>Significant Allocation Increases (≥ 10% absolute increase)</h2>
+      <div class="results" id="significant_results">
+        <!-- Significant results will appear here -->
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>Moderate Allocation Increases (≥ 5% and &lt; 10% absolute increase)</h2>
+      <div class="results" id="moderate_results">
+        <!-- Moderate results will appear here -->
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Function to process the pasted input data
+    function processInput(inputData) {
+      let lines = inputData.trim().split("\n");
+      let stockData = [];
+      lines.forEach(line => {
+        let tokens = line.split(/\s+/);
+        let stockName = null;
+        let value = null;
+        tokens.forEach(token => {
+          // If token contains letters and stockName is not yet set, assign it as the stock name.
+          if (/[a-zA-Z]/.test(token) && stockName === null) {
+            stockName = token;
+          } else if (token.endsWith("%")) {
+            // Remove the "%" sign and parse the number.
+            let num = parseFloat(token.slice(0, -1));
+            if (!isNaN(num)) {
+              value = num / 100;
+            } else {
+              console.log("Error parsing percentage value: " + token);
+              value = null;
+            }
+          }
+        });
+        if (stockName && value !== null) {
+          stockData.push({ name: stockName, value: value });
+        } else if (stockName && value === null) {
+          console.log("No percentage found for stock: " + stockName);
+        } else if (!stockName && value !== null) {
+          console.log("No stock name found for percentage: " + (value * 100).toFixed(2) + "%");
+        }
+      });
+      return stockData;
+    }
+    
+    // Function to compare two quarterly reports.
+    function compareStocksAll(list1, list2) {
+      let results = [];
+      let dict1 = {};
+      let dict2 = {};
+      
+      list1.forEach(item => { dict1[item.name] = item.value; });
+      list2.forEach(item => { dict2[item.name] = item.value; });
+      
+      // Compare stocks present in Q1.
+      for (let name in dict1) {
+        if (dict2.hasOwnProperty(name)) {
+          let diff = dict2[name] - dict1[name];
+          results.push({ name: name, q1: dict1[name], q2: dict2[name], diff: diff });
+        } else {
+          results.push({ name: name, q1: dict1[name], q2: "N/A", diff: "N/A" });
+        }
+      }
+      
+      // Identify new stocks in Q2.
+      for (let name in dict2) {
+        if (!dict1.hasOwnProperty(name)) {
+          results.push({ name: name, q1: "New Stock", q2: dict2[name], diff: "N/A" });
+        }
+      }
+      
+      return results;
+    }
+    
+    // Function to run the analysis when the button is clicked.
+    function analyze() {
+      let q1Data = document.getElementById("q1_data").value;
+      let q2Data = document.getElementById("q2_data").value;
+      
+      let list1 = processInput(q1Data);
+      let list2 = processInput(q2Data);
+      
+      let comparisonResults = compareStocksAll(list1, list2);
+      
+      // Separate stocks into significant and moderate increases.
+      let significant = [];
+      let moderate = [];
+      
+      comparisonResults.forEach(result => {
+        // Only compare if both Q1 and Q2 allocations are numbers.
+        if (typeof result.q1 === "number" && typeof result.q2 === "number") {
+          if (result.diff >= 0.10) {
+            significant.push(result);
+          } else if (result.diff >= 0.05 && result.diff < 0.10) {
+            moderate.push(result);
+          }
+        }
+      });
+      
+      // Display the results.
+      displayResults("significant_results", significant);
+      displayResults("moderate_results", moderate);
+    }
+    
+    // Function to display results in a given element.
+    function displayResults(elementId, results) {
+      let container = document.getElementById(elementId);
+      container.innerHTML = "";
+      if (results.length > 0) {
+        let ul = document.createElement("ul");
+        results.forEach(item => {
+          let li = document.createElement("li");
+          li.textContent = `${item.name}: Q1: ${(item.q1 * 100).toFixed(2)}%, Q2: ${(item.q2 * 100).toFixed(2)}%, Increase: ${(item.diff * 100).toFixed(2)}%`;
+          ul.appendChild(li);
+        });
+        container.appendChild(ul);
+      } else {
+        container.innerHTML = "<p>No results found.</p>";
+      }
+    }
+  </script>
+</body>
+</html>
